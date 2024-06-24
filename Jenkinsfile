@@ -10,6 +10,7 @@ pipeline {
         DEPLOYMENT_CONFIG = 'deployment.yaml'
         SERVICE_CONFIG = 'service.yaml'
         WORKSPACE_DIR = "${env.WORKSPACE}/src"
+        GIT_CREDENTIALS_ID = 'github-token' // The ID of the GitHub token credentials
     }
 
     stages {
@@ -28,10 +29,12 @@ pipeline {
         stage('Clone Repository') {
             steps {
                 script {
-                    // Clone the repository
-                    sh '''
-                    git clone ${GIT_REPO_URL} ${WORKSPACE_DIR}
-                    '''
+                    // Clone the repository using Git credentials
+                    withCredentials([string(credentialsId: GIT_CREDENTIALS_ID, variable: 'GITHUB_TOKEN')]) {
+                        sh '''
+                        git clone https://$GITHUB_TOKEN@github.com/NautiluX/s3e ${WORKSPACE_DIR}
+                        '''
+                    }
                 }
             }
         }
