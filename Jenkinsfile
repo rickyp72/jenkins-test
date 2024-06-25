@@ -77,12 +77,18 @@ pipeline {
         stage('Wait for Build') {
             steps {
                 script {
-                    // Wait for the build to complete
+                    // Wait for the build to complete, checking every minute
                     timeout(time: 15, unit: 'MINUTES') {
                         waitUntil {
                             script {
                                 def buildStatus = sh(script: "oc get builds -n ${PROJECT_NAMESPACE} -o jsonpath='{.items[?(@.metadata.annotations.openshift\\.io/build\\.name==\"${PROJECT_NAME}-1\")].status.phase}'", returnStdout: true).trim()
-                                return buildStatus == 'Complete'
+                                if (buildStatus == 'Complete') {
+                                    return true
+                                } else if (buildStatus == 'Failed' || buildStatus == 'Cancelled') {
+                                    error "Build failed with status: ${buildStatus}"
+                                }
+                                sleep 60 // Wait for 60 seconds before checking again
+                                return false
                             }
                         }
                     }
