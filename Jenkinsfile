@@ -19,12 +19,12 @@ pipeline {
             script {
               // cleanup repo
               sh '''
-              rm -rf /var/lib/jenkins/jobs/test-project1/branches/main/workspace/src
+              rm -rf ${WORKSPACE_DIR}
               '''
             }
           }
         }
-        
+
         stage('Prepare Workspace') {
             steps {
                 script {
