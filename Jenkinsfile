@@ -29,12 +29,10 @@ pipeline {
         stage('Clone Repository') {
             steps {
                 script {
-                    // Clone the repository using Git credentials
-                    withCredentials([string(credentialsId: GIT_CREDENTIALS_ID, variable: 'GITHUB_TOKEN')]) {
+                    // Clone the repository using without Git credentials
                         sh '''
-                        git clone https://$GITHUB_TOKEN@github.com/NautiluX/s3e ${WORKSPACE_DIR}
+                        git clone https://github.com/NautiluX/s3e ${WORKSPACE_DIR}
                         '''
-                    }
                 }
             }
         }
