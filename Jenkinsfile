@@ -74,6 +74,22 @@ pipeline {
             }
         }
 
+        stage('Wait for Build') {
+            steps {
+                script {
+                    // Wait for the build to complete
+                    timeout(time: 15, unit: 'MINUTES') {
+                        waitUntil {
+                            script {
+                                def buildStatus = sh(script: "oc get builds -n ${PROJECT_NAMESPACE} -o jsonpath='{.items[?(@.metadata.annotations.openshift\\.io/build\\.name==\"${PROJECT_NAME}-1\")].status.phase}'", returnStdout: true).trim()
+                                return buildStatus == 'Complete'
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         stage('Deploy Project') {
             steps {
                 script {
