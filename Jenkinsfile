@@ -17,10 +17,12 @@ pipeline {
         stage('Prepare Workspace') {
             steps {
                 script {
-                    // Create workspace directory with proper permissions
+                    // Check if workspace directory exists and create it if not
                     sh '''
-                    mkdir -p ${WORKSPACE_DIR}
-                    chmod 777 ${WORKSPACE_DIR}
+                    if [ ! -d "${WORKSPACE_DIR}" ]; then
+                      mkdir -p ${WORKSPACE_DIR}
+                      chmod 777 ${WORKSPACE_DIR}
+                    fi
                     '''
                 }
             }
@@ -29,10 +31,10 @@ pipeline {
         stage('Clone Repository') {
             steps {
                 script {
-                    // Clone the repository using without Git credentials
+                    // Clone the repository
                         sh '''
-                        git clone https://github.com/NautiluX/s3e ${WORKSPACE_DIR}
-                        '''
+                        git clone https://$GITHUB_TOKEN@github.com/NautiluX/s3e ${WORKSPACE_DIR}
+                       '''
                 }
             }
         }
