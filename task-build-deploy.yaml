@@ -1,0 +1,89 @@
+﻿apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"tekton.dev/v1beta1","kind":"Task","metadata":{"annotations":{},"name":"build-deploy","namespace":"arcade"},"spec":{"steps":[{"image":"golang","name":"clone","script":"#!/bin/bash\n\ngit clone https://github.com/NautiluX/s3e /workspace/src\n"},{"image":"image-registry.openshift-image-registry.svc:5000/openshift/cli","name":"configure-project","script":"#!/bin/bash\n\nset -euo pipefail\n\ncd /workspace/src/highscore/ci\noc apply -f imagestream.yaml\noc apply -f buildconfig.yaml\n"},{"image":"image-registry.openshift-image-registry.svc:5000/openshift/cli","name":"build","script":"#!/bin/bash\n\nset -euo pipefail\n\noc start-build -F highscore -n arcade\n"},{"image":"image-registry.openshift-image-registry.svc:5000/openshift/cli","name":"deploy","script":"#!/bin/bash\n\nset -euxo pipefail\n\ncd /workspace/src/highscore/ci\noc apply -f deployment.yaml\nBUILDDATE=$(date +%Y-%m-%d-%H%M%S)\noc patch deployment highscore -p \"{\\\"spec\\\":{\\\"template\\\":{\\\"metadata\\\":{\\\"labels\\\":{\\\"last-build\\\":\\\"$BUILDDATE\\\"}}}}}\"\noc apply -f service.yaml\n\n# Generate and apply route\nHOSTNAME=\"arcade.$(oc get ingresses.config.openshift.io  cluster -o jsonpath='{.spec.domain}')\"\noc apply -f \u003c(cat \u003c\u003c-EOF\n  apiVersion: route.openshift.io/v1\n  kind: Route\n  metadata:\n    labels:\n      app: highscore\n    name: highscore\n    namespace: arcade\n  spec:\n    host: $HOSTNAME\n    path: /highscore\n    port:\n      targetPort: 8080\n    to:\n      kind: Service\n      name: highscore\nEOF\n)\n"}]}}
+  creationTimestamp: '2024-06-24T14:21:44Z'
+  generation: 1
+  managedFields:
+    - apiVersion: tekton.dev/v1beta1
+      fieldsType: FieldsV1
+      fieldsV1:
+        'f:metadata':
+          'f:annotations':
+            .: {}
+            'f:kubectl.kubernetes.io/last-applied-configuration': {}
+        'f:spec':
+          .: {}
+          'f:steps': {}
+      manager: kubectl-client-side-apply
+      operation: Update
+      time: '2024-06-24T14:21:44Z'
+  name: build-deploy
+  namespace: arcade
+  resourceVersion: '1186405'
+  uid: 5e6bc1f8-8b90-48c1-ae09-c53506e42167
+spec:
+  steps:
+    - image: golang
+      name: clone
+      resources: {}
+      script: |
+        #!/bin/bash
+
+        git clone https://github.com/NautiluX/s3e /workspace/src
+    - image: 'image-registry.openshift-image-registry.svc:5000/openshift/cli'
+      name: configure-project
+      resources: {}
+      script: |
+        #!/bin/bash
+
+        set -euo pipefail
+
+        cd /workspace/src/highscore/ci
+        oc apply -f imagestream.yaml
+        oc apply -f buildconfig.yaml
+    - image: 'image-registry.openshift-image-registry.svc:5000/openshift/cli'
+      name: build
+      resources: {}
+      script: |
+        #!/bin/bash
+
+        set -euo pipefail
+
+        oc start-build -F highscore -n arcade
+    - image: 'image-registry.openshift-image-registry.svc:5000/openshift/cli'
+      name: deploy
+      resources: {}
+      script: |
+        #!/bin/bash
+
+        set -euxo pipefail
+
+        cd /workspace/src/highscore/ci
+        oc apply -f deployment.yaml
+        BUILDDATE=$(date +%Y-%m-%d-%H%M%S)
+        oc patch deployment highscore -p "{\"spec\":{\"template\":{\"metadata\":{\"labels\":{\"last-build\":\"$BUILDDATE\"}}}}}"
+        oc apply -f service.yaml
+
+        # Generate and apply route
+        HOSTNAME="arcade.$(oc get ingresses.config.openshift.io  cluster -o jsonpath='{.spec.domain}')"
+        oc apply -f <(cat <<-EOF
+          apiVersion: route.openshift.io/v1
+          kind: Route
+          metadata:
+            labels:
+              app: highscore
+            name: highscore
+            namespace: arcade
+          spec:
+            host: $HOSTNAME
+            path: /highscore
+            port:
+              targetPort: 8080
+            to:
+              kind: Service
+              name: highscore
+        EOF
+        )
